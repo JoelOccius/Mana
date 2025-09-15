@@ -1,0 +1,33 @@
+name: CI - Church API
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 👉 Clone repo
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 👉 Mete Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      # 👉 Enstale depandans
+      - name: Install dependencies
+        run: npm install
+
+      # 👉 Kouri Jest tests ak SQLite
+      - name: Run tests
+        run: npm test
+        env:
+          NODE_ENV: test
