@@ -50,5 +50,5 @@ const Event = sequelize.define(
   }
 );
 
-module.exports = Event;
+module.exports = Event;
 

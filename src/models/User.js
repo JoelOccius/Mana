@@ -51,19 +51,23 @@ app.get("/", (req, res) => {
   res.send("⛪ API Legliz la ap mache!");
 });*/
 
-// 👉 ajoute auth routes
-app.use("/auth", authRoutes);
+// server/src/models/User.js
+/*const { DataTypes } = require("sequelize");
+const sequelize = require("../config/db");
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, async () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  try {
-    await sequelize.authenticate();
-    console.log("✅ Database connected!");
-  } catch (err) {
-    console.error("❌ Database connection error:", err);
-  }
+const User = sequelize.define("User", {
+  user_id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+  email: { type: DataTypes.STRING(255), unique: true, allowNull: false },
+  password_hash: { type: DataTypes.STRING(255), allowNull: false },
+  role: { type: DataTypes.ENUM("admin", "editor", "viewer"), defaultValue: "viewer" },
+  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+  tableName: "users",
+  timestamps: false
 });
+
+module.exports = User;*/
+
 
 
 /*const { DataTypes } = require("sequelize");
@@ -118,6 +122,30 @@ const User = sequelize.define("User", {
 });
 
 export default User;*/
+
+
+
+
+
+
+
+// server/src/models/User.js
+const { DataTypes } = require("sequelize");
+const sequelize = require("../config/db");
+
+const User = sequelize.define("User", {
+  user_id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+  email: { type: DataTypes.STRING(255), unique: true, allowNull: false },
+  password_hash: { type: DataTypes.STRING(255), allowNull: false },
+  role: { type: DataTypes.ENUM("admin", "editor", "viewer"), defaultValue: "viewer" },
+  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+  tableName: "users",
+  timestamps: false
+});
+
+module.exports = User;
+
 
 
 

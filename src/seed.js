@@ -131,3 +131,5 @@ async function seed() {
 seed();
 
 
+module.exports = router;
+

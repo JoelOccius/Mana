@@ -1,85 +1,243 @@
-/*require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const sequelize = require("./config/db");
+// server/src/index.js — CommonJS ONLY
+/*require('dotenv').config();
+const express   = require('express');
+const cors      = require('cors');
+const path      = require('path');
+const fs        = require('fs');
+const multer    = require('multer');        // ✅ CommonJS
+const sequelize = require('./config/db');
 
-// IMPORT ROUTES
-const memberRoutes = require("./routes/members");
-const eventRoutes = require("./routes/events");
-const donationRoutes = require("./routes/donations");
+// ====== ROUTES (ki deja egziste nan pwojè w) ======
+const memberRoutes   = require('./routes/members');
+const eventRoutes    = require('./routes/events');
+const donationRoutes = require('./routes/donations');
+
+// ⚠️ Otantifikasyon / admin / piblik (si yo egziste)
+const authRoutes     = require('./routes/auth');
+const adminRoutes    = require('./routes/admin');
+const publicRoutes   = require('./routes/public');
 
 const app = express();
-app.use(cors());
-app.use(express.json());
 
-// health
-app.get("/", (_req, res) => res.send("Church API up ✅"));
+/* ===================== MIDDLEWARES ===================== *
+app.use(cors({
+  origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173', // ajiste si bezwen
+  credentials: true,
+}));
+app.use(express.json()); // li JSON pou tout POST/PUT JSON
 
-// USE ROUTES
-app.use("/api/members", memberRoutes);
-app.use("/api/events", eventRoutes);
-app.use("/api/donations", donationRoutes);
+/* ==================== STATIC UPLOADS ==================== *
+// Asire katab uploads la egziste
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-// DB connect test + (opsyonèl) sync ak tab ki deja egziste
+// Sèvi fichye yo piblikman: http://localhost:5000/uploads/<filename>
+app.use('/uploads', express.static(uploadsDir));
+
+/* ==================== MULTER (UPLOAD) =================== *
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadsDir),
+  filename: (_req, file, cb) => {
+    const ext  = path.extname(file.originalname);
+    const base = path.basename(file.originalname, ext).replace(/\s+/g, '_');
+    cb(null, `${Date.now()}_${base}${ext}`);
+  },
+});
+const upload = multer({ storage });
+
+/* ===================== HEALTH CHECK ===================== *
+app.get('/', (_req, res) => {
+  // Toujou reponn JSON pou konsistans (evite HTML)
+  return res.json({ ok: true, message: 'Church API up ✅' });
+});
+
+/* ================ SAMPLE POSTS ENDPOINTS =================
+   Si ou DEJA gen routes pou posts nan pwojè w, ou ka
+   retire seksyon sa yo. Men yo itil pou tès rapid ak frontend.
+========================================================== */
+let POSTS = []; // memwa pou tès
+
+// JSON: kreye post (lè w mete URL imaj)
+/*app.post('/api/posts', (req, res) => {
+  try {
+    const { title, description, imageUrl } = req.body || {};
+    if (!title) return res.status(400).json({ ok: false, message: 'title obligatwa' });
+
+    const post = {
+      id: Date.now().toString(),
+      title,
+      description: description || '',
+      imageUrl: imageUrl || '',
+      createdAt: new Date().toISOString(),
+    };
+    POSTS.unshift(post);
+    return res.status(201).json({ ok: true, post });
+  } catch (e) {
+    return res.status(500).json({ ok: false, message: e.message });
+  }
+});
+
+// MULTIPART: upload fichye (lè w chwazi imaj sou laptop)
+app.post('/api/posts/upload', upload.single('image'), (req, res) => {
+  try {
+    const { title, description } = req.body || {};
+    if (!title)      return res.status(400).json({ ok: false, message: 'title obligatwa' });
+    if (!req.file)   return res.status(400).json({ ok: false, message: 'image obligatwa' });
+
+    // URL piblik pou imaj la
+    const publicUrl = `/uploads/${req.file.filename}`;
+
+    const post = {
+      id: Date.now().toString(),
+      title,
+      description: description || '',
+      imageUrl: publicUrl,
+      createdAt: new Date().toISOString(),
+    };
+    POSTS.unshift(post);
+    return res.status(201).json({ ok: true, post });
+  } catch (e) {
+    return res.status(500).json({ ok: false, message: e.message });
+  }
+});
+
+// Lis pou Home
+app.get('/api/posts', (_req, res) => {
+  return res.json({ ok: true, posts: POSTS });
+});
+
+/* ====================== YOUR ROUTES ===================== *
+// API prensipal ou yo (Sequelize, Postgres, elatriye)
+app.use('/api/members',   memberRoutes);
+app.use('/api/events',    eventRoutes);
+app.use('/api/donations', donationRoutes);
+
+// otantifikasyon / admin / piblik
+app.use('/auth',  authRoutes);
+app.use('/admin', adminRoutes);
+app.use('/public', publicRoutes);
+
+/* ============== 404 JSON pou tout /api restan =========== *
+app.use('/api', (_req, res) => {
+  return res.status(404).json({ ok: false, message: 'Not found' });
+});
+
+/* ================== DB CONNECT & SYNC =================== *
 (async () => {
   try {
     await sequelize.authenticate();
-    console.log("✅ Connected to Postgres");
-
-    // Si tab yo **deja** egziste nan DB (jan ou te kreye yo), kenbe FALSE:
+    console.log('✅ Connected to Postgres');
     await sequelize.sync({ alter: false });
-
+    console.log('🗃️ Models synchronized');
   } catch (err) {
-    console.error("❌ DB connection error:", err.message);
+    console.error('❌ DB connection error:', err.message);
   }
 })();
 
+/* ===================== START SERVER ===================== *
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`API running on http://localhost:${PORT}`);
+});
 
-process.on("unhandledRejection", err => console.error("Unhandled Rejection:", err));
-process.on("uncaughtException", err => console.error("Uncaught Exception:", err));*/
+/* ==================== GLOBAL HANDLERS ==================== *
+process.on('unhandledRejection', (err) => console.error('Unhandled Rejection:', err));
+process.on('uncaughtException',  (err) => console.error('Uncaught Exception:', err));*/
 
+
+
+
+
+
+/// server/src/index.js  — CommonJS
+// server/src/index.js  — CommonJS, ready for Railway
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const sequelize = require("./config/db");
 
-// IMPORT ROUTES
-const memberRoutes = require("./routes/members");
-const eventRoutes = require("./routes/events");
+// ====== ENSKRI MODÈL YO (pou Sequelize ka fè tablo yo) ======
+require("./models/ContentBlock");
+try { require("./models/User"); } catch {}
+try { require("./models/Event"); } catch {}
+try { require("./models/Announcement"); } catch {}
+
+// ====== ROUTES ======
+const memberRoutes   = require("./routes/members");
+const eventRoutes    = require("./routes/events");
 const donationRoutes = require("./routes/donations");
+const authRoutes     = require("./routes/auth");
+const adminRoutes    = require("./routes/admin");
+const publicRoutes   = require("./routes/public");
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+app.set("trust proxy", 1);
 
-// health
+// ====== CORS (localhost + Vercel previews) ======
+const allowList = [
+  process.env.FRONTEND_URL,     // eg. https://front.vercel.app
+  process.env.ADMIN_URL,        // si gen admin separe
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true); // Postman/cURL
+    const ok = allowList.includes(origin) || /\.vercel\.app$/i.test(origin);
+    cb(null, ok);
+  },
+  credentials: true,
+  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
+  allowedHeaders: ["Content-Type","Authorization"],
+}));
+
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
+
+// ====== STATIC UPLOADS (rekòmande: server/src/uploads) ======
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// ====== HEALTH ======
+app.get("/health", (_req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 app.get("/", (_req, res) => res.send("Church API up ✅"));
 
-// USE ROUTES
-app.use("/api/members", memberRoutes);
-app.use("/api/events", eventRoutes);
+// ====== MOUNT ROUTES ======
+app.use("/api/members",   memberRoutes);
+app.use("/api/events",    eventRoutes);
 app.use("/api/donations", donationRoutes);
+app.use("/auth",          authRoutes);
+app.use("/admin",         adminRoutes);
+app.use("/public",        publicRoutes);
 
-// DB connect test + (opsyonèl) sync ak tab ki deja egziste
+// ====== 404 & ERROR HANDLERS ======
+app.use((req, res) => {
+  res.status(404).json({ error: `Route not found: ${req.method} ${req.originalUrl}` });
+});
+app.use((err, _req, res, _next) => {
+  console.error("🔥 Error:", err);
+  res.status(err.status || 500).json({ error: err.message || "Server error" });
+});
+
+// ====== DB CONNECT + SYNC ======
 (async () => {
   try {
     await sequelize.authenticate();
     console.log("✅ Connected to Postgres");
-
-    // Si tab yo **deja** egziste nan DB (jan ou te kreye yo), kenbe FALSE:
     await sequelize.sync({ alter: false });
-
+    console.log("🗃️ Models synchronized");
   } catch (err) {
     console.error("❌ DB connection error:", err.message);
   }
 })();
 
+// ====== START SERVER ======
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`API running on :${PORT}`);
+});
 
-process.on("unhandledRejection", err => console.error("Unhandled Rejection:", err));
-process.on("uncaughtException", err => console.error("Uncaught Exception:", err));
-
-
+// ====== LOG UNHANDLED ======
+process.on("unhandledRejection", (e)=>console.error("Unhandled Rejection:", e));
+process.on("uncaughtException", (e)=>console.error("Uncaught Exception:", e));
