@@ -6,7 +6,7 @@ const sequelize = require("./src/config/db");   // si dosye a nan rasin 'server/
 // NOTE: si w ap mete fichye sa a nan src/index.js, chemen an vin: './config/db'
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5050;
 
 app.use(cors());
 app.use(express.json());
