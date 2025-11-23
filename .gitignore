@@ -1,7 +1,7 @@
 node_modules
 .env.example
 .env
-db.js
+
 
 # asire .gitignore genyen sa yo:
 ni .gitignore -ItemType File -Force
