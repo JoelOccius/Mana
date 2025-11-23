@@ -4,7 +4,7 @@ const sequelize = require("../config/db");
 const Member = sequelize.define(
   "Member",
   {
-    member_id: {
+    Member_id: {
       type: DataTypes.BIGINT,
       primaryKey: true,
       autoIncrement: true
@@ -17,7 +17,7 @@ const Member = sequelize.define(
     joined_at:  { type: DataTypes.DATE, allowNull: true, defaultValue: DataTypes.NOW }
   },
   {
-    tableName: "members",
+    tableName: "Members",
     timestamps: false
   }
 );

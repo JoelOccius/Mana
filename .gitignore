@@ -9,15 +9,7 @@ ni .gitignore -ItemType File -Force
 node_modules/
 .env
 .env.*
-uploads/
-src/uploads/
-!src/uploads/.gitkeep
-dist/
-build/
-.vscode/
-.DS_Store
-Thumbs.db
-"@ | Out-File .gitignore -Encoding UTF8
+
 
 
 
